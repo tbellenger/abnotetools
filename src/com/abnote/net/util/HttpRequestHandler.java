@@ -1,8 +1,10 @@
 package com.abnote.net.util;
 
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import org.apache.http.HttpEntity;
@@ -11,7 +13,9 @@ import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -69,17 +73,50 @@ public class HttpRequestHandler {
 		return mCookieStore;
 	}
 
-	public String sendRequest(ArrayList<NameValuePair> params, String url, String service) {
+	public String post(ArrayList<NameValuePair> params, String url, String service) {
+		HttpPost post;
 		String response = null;
 		try {
-			URI uri = new URI(url + "/" + service);
-			Log.d(TAG, uri.toASCIIString());
-			HttpPost post = new HttpPost(uri);
+			post = new HttpPost(getUri(url, service));
 			post.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
 			for(NameValuePair b:params){
 				Log.d(TAG, b.getName() + ": " + b.getValue());
 			}
-			HttpResponse httpResponse = client.execute(post, mLocalContext);
+			response = http(post);
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return response;
+	}
+	
+	public String get(String url, String service) {
+		HttpGet get;
+		String response = null;
+		try {
+			get = new HttpGet(getUri(url,service));
+			response = http(get);
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return response;
+	}
+	
+	private URI getUri(String url, String service) throws URISyntaxException {
+		URI uri = new URI(url + "/" + service);
+		Log.d(TAG, uri.toASCIIString());
+		return uri;
+	}
+	
+	private String http(HttpUriRequest req) {
+		String response = null;
+		try {
+			
+			HttpResponse httpResponse = client.execute(req, mLocalContext);
 			if (HttpStatus.SC_OK == httpResponse.getStatusLine().getStatusCode()) {
 				HttpEntity entity = httpResponse.getEntity();
 				if (entity != null) {
@@ -105,4 +142,6 @@ public class HttpRequestHandler {
 		}
 		return response;
 	}
+	
+	
 }
